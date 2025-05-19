@@ -1,0 +1,227 @@
+package org.example;
+
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public class QuestionForm extends JDialog {
+    private JTextArea txtContent;
+    private JComboBox<String> cbLevel,cbType;
+    private JTextField txtAudioUrl;
+    private JButton btnSave, btnCancel,btnChooseAudio,btnImportImage;
+
+    private Question question;
+    private QuestionDAO dao = new QuestionDAO();
+    private Runnable onSaveCallback;
+
+    private static final Font FONT_JP = new Font("Meiryo", Font.PLAIN, 16);
+
+    public QuestionForm(JFrame parent, Question q, Runnable onSaveCallback) {
+        super(parent, "Nhập câu hỏi", true);
+        this.question = q;
+        this.onSaveCallback = onSaveCallback;
+
+        setSize(600, 500);
+        setLocationRelativeTo(parent);
+        setLayout(new BorderLayout());
+
+        // ==== Tạo form chính ====
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // ==== Nội dung câu hỏi (chiếm nhiều không gian) ====
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        formPanel.add(new JLabel("Nội dung câu hỏi:"), gbc);
+
+        txtContent = new JTextArea(8, 40);
+        txtContent.setFont(FONT_JP);
+        txtContent.setLineWrap(true);
+        txtContent.setWrapStyleWord(true);
+        txtContent.setRows(8); // Đặt số dòng tối thiểu
+        txtContent.setColumns(40); // Gợi ý chiều rộng
+        JScrollPane contentScroll = new JScrollPane(txtContent);
+        contentScroll.setPreferredSize(new Dimension(400, 160));
+
+        gbc.gridy = 1;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        formPanel.add(contentScroll, gbc);
+
+        // ==== Trình độ ====
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(new JLabel("Trình độ (N5–N1):"), gbc);
+
+        cbLevel = new JComboBox<>(new String[]{"N5", "N4", "N3", "N2", "N1"});
+        gbc.gridx = 1;
+        formPanel.add(cbLevel, gbc);
+
+        // ==== Loại câu hỏi ====
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        formPanel.add(new JLabel("Loại câu hỏi:"), gbc);
+
+        cbType = new JComboBox<>(new String[]{"kanji", "grammar", "vocabulary"});
+        cbType.setFont(FONT_JP);
+        gbc.gridx = 1;
+        formPanel.add(cbType, gbc);
+
+
+        // ==== Audio URL ====
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        formPanel.add(new JLabel("Chọn file audio:"), gbc);
+
+        JPanel audioPanel = new JPanel(new BorderLayout(5, 0));
+        txtAudioUrl = new JTextField();
+        txtAudioUrl.setEditable(false); // Không cho nhập thủ công
+
+        btnChooseAudio = new JButton("Chọn...");
+        btnChooseAudio.addActionListener(e -> chooseAudioFile());
+
+        audioPanel.add(txtAudioUrl, BorderLayout.CENTER);
+        audioPanel.add(btnChooseAudio, BorderLayout.EAST);
+
+        gbc.gridx = 1;
+        formPanel.add(audioPanel, gbc);
+
+
+        // ==== Nút lưu & huỷ ====
+        btnSave = new JButton("Lưu");
+        btnCancel = new JButton("Huỷ");
+        btnImportImage = new JButton("Nhập từ ảnh");
+        btnImportImage.addActionListener(e -> importFromImage());
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(btnSave);
+        buttonPanel.add(btnCancel);
+        buttonPanel.add(btnImportImage);
+
+
+        // ==== Gắn vào layout ====
+        add(formPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // ==== Đổ dữ liệu nếu sửa ====
+        if (question != null) {
+            txtContent.setText(question.getContent());
+            cbLevel.setSelectedItem(question.getLevel());
+            txtAudioUrl.setText(question.getAudio_url());
+        }
+
+        // ==== Đặt con trỏ vào vùng nội dung khi mở form ====
+        SwingUtilities.invokeLater(() -> txtContent.requestFocusInWindow());
+
+        // ==== Sự kiện ====
+        btnSave.addActionListener(e -> saveQuestion());
+        btnCancel.addActionListener(e -> dispose());
+    }
+    // Dummy parser: replace with actual parsing logic
+    private List<Question> parseQuestions(String raw) {
+        List<Question> list = new ArrayList<>();
+        for (String line : raw.split("\n")) {
+            if (!line.trim().isEmpty()) {
+                Question q = new Question();
+                q.setContent(line.trim());
+                q.setLevel("N5");
+                q.setType("kanji");
+                q.setAudio_url("");
+                list.add(q);
+            }
+        }
+        return list;
+    }
+
+    private void importFromImage() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Chọn ảnh chứa câu hỏi");
+        int result = chooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selected = chooser.getSelectedFile();
+            btnImportImage.setEnabled(false);
+
+            final JDialog loadingDialog = new JDialog(this, "Đang xử lý...");
+            JLabel lbl = new JLabel("Đang xử lý ảnh và sinh câu hỏi, vui lòng chờ...");
+            lbl.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            loadingDialog.add(lbl);
+            loadingDialog.pack();
+            loadingDialog.setLocationRelativeTo(this);
+            loadingDialog.setVisible(true);
+
+            SwingWorker<List<Question>, Void> worker = new SwingWorker<>() {
+
+                @Override
+                protected List<Question> doInBackground() throws Exception {
+                    String raw = AIUtils.extractQuestions(selected.getAbsolutePath());
+                    return parseQuestions(raw);
+                }
+
+                @Override
+                protected void done() {
+                    loadingDialog.dispose();
+                    btnImportImage.setEnabled(true);
+                    try {
+                        List<Question> questions = get();
+                        if (!questions.isEmpty()) {
+                            JOptionPane.showMessageDialog(QuestionForm.this, "Đã sinh ra danh sách câu hỏi từ ảnh.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                            ImportQuestionsDialog dialog = new ImportQuestionsDialog(QuestionForm.this, questions);
+                            dialog.setVisible(true);
+                        } else {
+                            JOptionPane.showMessageDialog(QuestionForm.this, "Không tìm thấy câu hỏi nào.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(QuestionForm.this, "Lỗi khi nhập từ ảnh: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+        }
+    }
+    private void chooseAudioFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Chọn file âm thanh");
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(true);
+
+        int result = chooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selected = chooser.getSelectedFile();
+            txtAudioUrl.setText(selected.getAbsolutePath());
+        }
+    }
+
+    private void saveQuestion() {
+        try {
+            if (question == null) question = new Question();
+
+            question.setContent(txtContent.getText().trim());
+            question.setLevel((String) cbLevel.getSelectedItem());
+            question.setType((String) cbType.getSelectedItem());
+            question.setAudio_url(txtAudioUrl.getText().trim());
+
+            if (question.getId() == 0) {
+                dao.insert(question);
+            } else {
+                dao.update(question);
+            }
+
+            if (onSaveCallback != null) {
+                onSaveCallback.run();
+            }
+
+            dispose();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Lỗi: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
