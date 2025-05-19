@@ -153,21 +153,34 @@ public class QuestionForm extends JDialog {
             final JDialog loadingDialog = new JDialog(this, "Đang xử lý...");
             JLabel lbl = new JLabel("Đang xử lý ảnh và sinh câu hỏi, vui lòng chờ...");
             lbl.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            JLabel timerLabel = new JLabel("Đã chờ: 0 giây");
+
             loadingDialog.add(lbl);
+            loadingDialog.add(timerLabel, BorderLayout.SOUTH);
             loadingDialog.pack();
             loadingDialog.setLocationRelativeTo(this);
+            loadingDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+
+
+
             loadingDialog.setVisible(true);
-
             SwingWorker<List<Question>, Void> worker = new SwingWorker<>() {
-
+                final int[] seconds = {0};
+                Timer timer = new Timer(1000, e -> {
+                    seconds[0]++;
+                    timerLabel.setText("Đã chờ: " + seconds[0] + " giây");
+                });
                 @Override
                 protected List<Question> doInBackground() throws Exception {
+                    timer.start();
                     String raw = AIUtils.extractQuestions(selected.getAbsolutePath());
+                    System.out.println(raw);
                     return parseQuestions(raw);
                 }
 
                 @Override
                 protected void done() {
+                    timer.stop();
                     loadingDialog.dispose();
                     btnImportImage.setEnabled(true);
                     try {
