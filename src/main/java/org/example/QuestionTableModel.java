@@ -3,14 +3,13 @@ package org.example;
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
-
 public class QuestionTableModel extends AbstractTableModel {
-    private String[] columnNames = {"ID", "Nội dung","Loại câu hỏi", "Cấp độ", "File âm thanh"};
+    private String[] columnNames = {"ID", "Nội dung", "Loại câu hỏi", "Cấp độ", "File âm thanh", "Câu trả lời đề xuất"};
     private List<Question> data = new ArrayList<>();
 
     public void setData(List<Question> questions) {
         this.data = questions;
-        fireTableDataChanged(); // Cập nhật lại bảng
+        fireTableDataChanged();
     }
 
     public Question getQuestionAt(int row) {
@@ -38,9 +37,10 @@ public class QuestionTableModel extends AbstractTableModel {
         return switch (columnIndex) {
             case 0 -> q.getId();
             case 1 -> q.getContent();
-            case 2 -> q.getType();
+            case 2 -> JulyUtils.TYPE_EN_TO_JP.get(q.getType());
             case 3 -> q.getLevel();
             case 4 -> q.getAudio_url();
+            case 5 -> q.getSuggested_answer();
             default -> "";
         };
     }

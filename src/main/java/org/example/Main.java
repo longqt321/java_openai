@@ -2,15 +2,11 @@ package org.example;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main extends JFrame{
+public class Main extends JFrame {
     private static QuestionDAO dao = new QuestionDAO();
     private QuestionTableModel tableModel;
     private JTable table;
@@ -21,41 +17,37 @@ public class Main extends JFrame{
 
     public Main() {
         setTitle("Quản lý ngân hàng đề thi");
-        setSize(800, 400);
+        setSize(900, 450);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         // Bảng câu hỏi
         tableModel = new QuestionTableModel();
-        table = new JTable(tableModel){
+        table = new JTable(tableModel);
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            Font fontJP = JulyUtils.FONT_JP;
+            Font fontVI = JulyUtils.FONT_VI;
+
             @Override
-            public String getToolTipText(MouseEvent event) {
-                int row = rowAtPoint(event.getPoint());
-                int col = columnAtPoint(event.getPoint());
-                String tooltipContent = getValueAt(row, col).toString();
-                if (col == 0) {
-                    return "ID: " + tooltipContent;
-                } else if (col == 1) {
-                    return "<html><body style='width: 400px; font-family: Meiryo; font-size: 14px;'>"
-                            + tooltipContent
-                            + "</body></html>";
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                if (column == 1 || column == 2 || column == 5) {
+                    c.setFont(fontJP);
+                } else {
+                    c.setFont(fontVI);
                 }
-                else if(col == 2){
-                    return "Loại câu hỏi: " + tooltipContent;
-                }
-                else if (col == 3) {
-                    return "Cấp độ:" + tooltipContent;
-                } else if (col == 4) {
-                    return "Audio URL: " + tooltipContent;
-                }
-                return null;
+
+                return c;
             }
-        };
+        });
+
         table.setFont(new Font("Meiryo", Font.PLAIN, 14));
         table.setRowHeight(40);
         refreshData();
 
-        // Double click to edit
+        // Double click để sửa
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 if (evt.getClickCount() == 2) {
@@ -69,10 +61,12 @@ public class Main extends JFrame{
         });
 
         // Nút CRUD
+        JButton btnRefresh = new JButton("Refresh");
         JButton btnAdd = new JButton("Thêm");
         JButton btnEdit = new JButton("Sửa");
         JButton btnDelete = new JButton("Xoá");
 
+        btnRefresh.addActionListener(e -> refreshData());
         btnAdd.addActionListener(e -> showForm(null));
         btnEdit.addActionListener(e -> {
             int row = table.getSelectedRow();
@@ -97,6 +91,7 @@ public class Main extends JFrame{
         });
 
         JPanel panelButtons = new JPanel();
+        panelButtons.add(btnRefresh);
         panelButtons.add(btnAdd);
         panelButtons.add(btnEdit);
         panelButtons.add(btnDelete);

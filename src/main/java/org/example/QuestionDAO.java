@@ -20,6 +20,7 @@ public class QuestionDAO {
                 q.setType(rs.getString("type"));
                 q.setAudio_url(rs.getString("audio_url"));
                 q.setLevel(rs.getString("level"));
+                q.setSuggested_answer(rs.getString("suggested_answer"));
                 list.add(q);
             }
         }
@@ -27,26 +28,28 @@ public class QuestionDAO {
     }
 
     public void insert(Question q) throws SQLException {
-        String sql = "INSERT INTO questions(content, audio_url,type, level) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO questions(content, audio_url,type, level,suggested_answer) VALUES (?, ?,?, ?,?)";
         try (Connection conn = DBUtils.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, q.getContent());
             stmt.setString(2, q.getAudio_url());
             stmt.setString(3, q.getType());
             stmt.setString(4, q.getLevel());
+            stmt.setString(5, q.getSuggested_answer());
             stmt.executeUpdate();
         }
     }
 
     public void update(Question q) throws SQLException {
-        String sql = "UPDATE questions SET content=?, audio_url=?,type=?, level=? WHERE id=?";
+        String sql = "UPDATE questions SET content=?, audio_url=?,type=?, level=?, suggested_answer=? WHERE id=?";
         try (Connection conn = DBUtils.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, q.getContent());
             stmt.setString(2, q.getAudio_url());
             stmt.setString(3, q.getType());
             stmt.setString(4, q.getLevel());
-            stmt.setInt(5, q.getId());
+            stmt.setString(5, q.getSuggested_answer());
+            stmt.setInt(6, q.getId());
             stmt.executeUpdate();
         }
     }

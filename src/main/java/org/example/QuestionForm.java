@@ -1,13 +1,17 @@
 package org.example;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class QuestionForm extends JDialog {
-    private JTextArea txtContent;
+    private JTextArea txtContent,txtSuggestedAnswer;
     private JComboBox<String> cbLevel,cbType;
     private JTextField txtAudioUrl;
     private JButton btnSave, btnCancel,btnChooseAudio,btnImportImage;
@@ -15,6 +19,8 @@ public class QuestionForm extends JDialog {
     private Question question;
     private QuestionDAO dao = new QuestionDAO();
     private Runnable onSaveCallback;
+
+
 
     private static final Font FONT_JP = new Font("Meiryo", Font.PLAIN, 16);
 
@@ -35,27 +41,35 @@ public class QuestionForm extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
-        // ==== Nội dung câu hỏi (chiếm nhiều không gian) ====
+        // ==== Nội dung câu hỏi ====
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.NONE;
         formPanel.add(new JLabel("Nội dung câu hỏi:"), gbc);
 
-        txtContent = new JTextArea(8, 40);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.4;
+        gbc.fill = GridBagConstraints.BOTH;
+
+        txtContent = new JTextArea(10, 50);
         txtContent.setFont(FONT_JP);
         txtContent.setLineWrap(true);
         txtContent.setWrapStyleWord(true);
-        txtContent.setRows(8); // Đặt số dòng tối thiểu
-        txtContent.setColumns(40); // Gợi ý chiều rộng
-        JScrollPane contentScroll = new JScrollPane(txtContent);
-        contentScroll.setPreferredSize(new Dimension(400, 160));
 
-        gbc.gridy = 1;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
+        JScrollPane contentScroll = new JScrollPane(txtContent);
         formPanel.add(contentScroll, gbc);
+        gbc.weighty = 0;
+
 
         // ==== Trình độ ====
+        gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
@@ -71,15 +85,24 @@ public class QuestionForm extends JDialog {
         gbc.gridy = 3;
         formPanel.add(new JLabel("Loại câu hỏi:"), gbc);
 
-        cbType = new JComboBox<>(new String[]{"kanji", "grammar", "vocabulary"});
-        cbType.setFont(FONT_JP);
+        cbType = new JComboBox<>(new String[]{"漢字", "文法", "語彙"});
         gbc.gridx = 1;
         formPanel.add(cbType, gbc);
+
+        // ==== Câu trả lời đề xuất ====
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        formPanel.add(new JLabel("Câu trả lời đề xuất:"), gbc);
+        txtSuggestedAnswer = new JTextArea(2, 40);
+        txtSuggestedAnswer.setFont(FONT_JP);
+        gbc.gridx = 1;
+        formPanel.add(txtSuggestedAnswer, gbc);
+
 
 
         // ==== Audio URL ====
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         formPanel.add(new JLabel("Chọn file audio:"), gbc);
 
         JPanel audioPanel = new JPanel(new BorderLayout(5, 0));
@@ -117,6 +140,11 @@ public class QuestionForm extends JDialog {
             txtContent.setText(question.getContent());
             cbLevel.setSelectedItem(question.getLevel());
             txtAudioUrl.setText(question.getAudio_url());
+            cbType.setSelectedItem(JulyUtils.TYPE_EN_TO_JP.get(question.getType()));
+            txtSuggestedAnswer.setText(question.getSuggested_answer());
+
+            btnImportImage.setEnabled(false); // Không cho nhập từ ảnh khi sửa
+
         }
 
         // ==== Đặt con trỏ vào vùng nội dung khi mở form ====
@@ -128,18 +156,13 @@ public class QuestionForm extends JDialog {
     }
     // Dummy parser: replace with actual parsing logic
     private List<Question> parseQuestions(String raw) {
-        List<Question> list = new ArrayList<>();
-        for (String line : raw.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                Question q = new Question();
-                q.setContent(line.trim());
-                q.setLevel("N5");
-                q.setType("kanji");
-                q.setAudio_url("");
-                list.add(q);
-            }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(raw, new TypeReference<List<Question>>() {});
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-        return list;
     }
 
     private void importFromImage() {
@@ -216,11 +239,17 @@ public class QuestionForm extends JDialog {
     private void saveQuestion() {
         try {
             if (question == null) question = new Question();
+            if (txtContent.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nội dung câu hỏi không được để trống.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
 
             question.setContent(txtContent.getText().trim());
             question.setLevel((String) cbLevel.getSelectedItem());
-            question.setType((String) cbType.getSelectedItem());
+            question.setType(JulyUtils.TYPE_JP_TO_EN.get(cbType.getSelectedItem()));
             question.setAudio_url(txtAudioUrl.getText().trim());
+            question.setSuggested_answer(txtSuggestedAnswer.getText().trim());
 
             if (question.getId() == 0) {
                 dao.insert(question);

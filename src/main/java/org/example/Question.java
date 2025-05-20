@@ -7,14 +7,16 @@ public class Question {
     private String audio_url;
     private String type;
     private String level;
+    private String suggested_answer;
 
     public Question() {
     }
-    public Question(String content, String audio_url, String type, String level) {
+    public Question(String content, String audio_url, String type, String level, String suggested_answer) {
         this.content = content;
         this.audio_url = audio_url;
         this.type = type;
         this.level = level;
+        this.suggested_answer = suggested_answer;
     }
     public int getId() {
         return id;
@@ -54,5 +56,13 @@ public class Question {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getSuggested_answer() {
+        return suggested_answer;
+    }
+
+    public void setSuggested_answer(String suggested_answer) {
+        this.suggested_answer = suggested_answer;
     }
 }

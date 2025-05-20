@@ -46,7 +46,7 @@ public class ImportQuestionsDialog extends JDialog {
         int row = table.getSelectedRow();
         if (row >= 0) {
             Question q = tableModel.getQuestionAt(row);
-            QuestionForm form = new QuestionForm((JFrame) getParent(), q, () -> tableModel.fireTableRowsUpdated(row, row));
+            QuestionForm form = new QuestionForm(null, q, () -> tableModel.fireTableRowsUpdated(row, row));
             form.setVisible(true);
         }
     }
