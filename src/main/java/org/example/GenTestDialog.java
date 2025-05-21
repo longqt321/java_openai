@@ -54,7 +54,6 @@ public class GenTestDialog extends JDialog {
                 BorderFactory.createTitledBorder("Số câu hỏi sẵn có")
         ));
 
-// Dòng tiêu đề
         tablePanel.add(new JLabel("")); // Ô trống đầu dòng
         for (String level : levels) {
             JLabel label = new JLabel(level, SwingConstants.CENTER);
@@ -62,7 +61,6 @@ public class GenTestDialog extends JDialog {
             tablePanel.add(label);
         }
 
-// Dữ liệu từng dòng
         for (String type : types) {
             JLabel typeLabel = new JLabel(type, SwingConstants.CENTER);
             typeLabel.setFont(new Font("Dialog", Font.PLAIN, 14));
@@ -230,6 +228,7 @@ public class GenTestDialog extends JDialog {
         }
 
         Map<String, Integer> criteria = new LinkedHashMap<>();
+        Map<String, String> missingInfo = new LinkedHashMap<>();
 
         for (Component c : contentPanel.getComponents()) {
             if (c instanceof JPanel rowPanel) {
@@ -240,7 +239,8 @@ public class GenTestDialog extends JDialog {
                 JComboBox<String> cbLevel = (JComboBox<String>) controlsPanel.getComponent(3);
                 JTextField tfNum = (JTextField) controlsPanel.getComponent(5);
 
-                String type = cbType.getSelectedItem().toString();
+                String typeJP = cbType.getSelectedItem().toString();
+                String typeEN = JulyUtils.TYPE_JP_TO_EN.get(typeJP);
                 String level = cbLevel.getSelectedItem().toString();
                 int num;
 
@@ -251,9 +251,29 @@ public class GenTestDialog extends JDialog {
                     JOptionPane.showMessageDialog(this, "Số lượng phải là số nguyên dương.");
                     return;
                 }
+                int available = dao.countQuestions(typeEN, level);
+                if (available < num) {
+                    int missing = num - available;
+                    String msg = String.format("Số lượng câu hỏi cho [%s] trình độ [%s] không đủ. Thiếu [%d].", typeJP, level, missing);
+                    missingInfo.put(typeEN + ":" + level, msg);
+                }
 
-                criteria.put(JulyUtils.TYPE_JP_TO_EN.get(type) + ":" + level, num);
+                criteria.put(typeEN + ":" + level, num);
             }
+        }
+        if (!missingInfo.isEmpty()) {
+            StringBuilder message = new StringBuilder();
+            for (String s : missingInfo.values()) {
+                message.append(s).append("\n");
+            }
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    message.toString(),
+                    "Thiếu dữ liệu",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return; // Không tiếp tục nếu có tiêu chí thiếu
         }
 
         try {
