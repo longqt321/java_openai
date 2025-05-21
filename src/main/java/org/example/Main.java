@@ -17,7 +17,7 @@ public class Main extends JFrame {
     }
 
     public Main() {
-        setTitle("Quản lý ngân hàng đề thi");
+        setTitle("Quản lý ngân hàng đề thi. Người thực hiện: Trần Đức Long - 102230027 - 23T_Nhat1");
         setSize(900, 450);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
