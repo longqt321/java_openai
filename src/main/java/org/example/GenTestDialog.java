@@ -14,6 +14,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,8 @@ public class GenTestDialog extends JDialog {
     private final JLabel lblFolder = new JLabel("Chưa chọn");
     private File selectedFolder;
     private final QuestionDAO dao;
+    private JTextField txtNumOfTests;
+
 
     public GenTestDialog(JFrame parent, QuestionDAO dao) {
         super(parent, "Tạo đề thi", true);
@@ -39,6 +43,14 @@ public class GenTestDialog extends JDialog {
         setSize(650, 500);
         setLocationRelativeTo(getParent());
         setLayout(new BorderLayout(10, 10));
+
+        JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        inputPanel.add(new JLabel("Số lượng đề:"));
+        txtNumOfTests = new JTextField("1", 5); // mặc định 1 đề
+        inputPanel.add(txtNumOfTests);
+
+
+
 
         // Top panel with add button
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -90,6 +102,7 @@ public class GenTestDialog extends JDialog {
         southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.Y_AXIS));
         southPanel.add(createFolderPanel());
         southPanel.add(Box.createVerticalStrut(10));
+        southPanel.add(inputPanel);
         southPanel.add(createGeneratePanel());
 
         // Add components to main dialog
@@ -101,6 +114,8 @@ public class GenTestDialog extends JDialog {
         btnAdd.addActionListener(e -> addCriteriaRow());
         btnChooseFolder.addActionListener(e -> selectFolder());
         btnGenerate.addActionListener(e -> generate());
+
+
     }
 
     private void setupLayout() {
@@ -273,77 +288,33 @@ public class GenTestDialog extends JDialog {
                     "Thiếu dữ liệu",
                     JOptionPane.WARNING_MESSAGE
             );
-            return; // Không tiếp tục nếu có tiêu chí thiếu
+            return;
         }
 
         try {
-            List<Question> allQuestions = dao.generateTest(criteria);
-            if (allQuestions.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Không có câu hỏi nào phù hợp với tiêu chí đã chọn.");
+
+            int numOfTests = Integer.parseInt(txtNumOfTests.getText().trim());
+            if (numOfTests <= 0) {
+                JOptionPane.showMessageDialog(this, "Số lượng đề thi phải là số nguyên dương.");
                 return;
             }
-
-            String timestamp = new java.text.SimpleDateFormat("HH_mm_dd_MM_yyyy").format(new java.util.Date());
-            File outputDir = new File(selectedFolder, timestamp + "_test");
-
-            if (!outputDir.exists()) {
-                outputDir.mkdirs(); // tạo folder con
-            }
-
-            // 1. Ghi PDF (không có suggested_answer)
-            File pdfFile = new File(outputDir, "Test.pdf");
-            try (PDDocument doc = new PDDocument()) {
-                PDPage page = new PDPage(PDRectangle.A4);
-                doc.addPage(page);
-                PDPageContentStream content = new PDPageContentStream(doc, page);
-                InputStream fontStream = getClass().getClassLoader().getResourceAsStream("fonts/NotoSansJP-Regular.ttf");
-                PDType0Font unicodeFont = PDType0Font.load(doc, fontStream);
-
-                content.setFont(unicodeFont, 12);
-                content.beginText();
-                content.setLeading(14.5f);
-                content.newLineAtOffset(50, 750);
-
-                int index = 1;
-                for (Question q : allQuestions) {
-                    content.showText(index + ". (" + q.getType() + " - " + q.getLevel() + ")");
-                    content.newLine();
-                    content.showText("    " + q.getContent());
-                    content.newLine();
-                    content.newLine();
-                    index++;
+            String timestamp = new SimpleDateFormat("HH_mm_dd_MM_yyyy").format(new Date());
+            File outputDir = new File(selectedFolder, timestamp + "_DeThi");
+            for (int i = 0; i < numOfTests; i++) {
+                List<Question> allQuestions = dao.generateTest(criteria);
+                if (allQuestions.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Không có câu hỏi nào để tạo đề thi.");
+                    return;
                 }
 
-                content.endText();
-                content.close();
-                doc.save(pdfFile);
-            }
-
-            // 2. Ghi file đáp án
-            File answerFile = new File(outputDir, "AnswerKey.txt");
-            try (PrintWriter writer = new PrintWriter(answerFile)) {
-                int index = 1;
-                for (Question q : allQuestions) {
-                    writer.println(index + ". " + q.getSuggested_answer());
-                    index++;
+                if (!outputDir.exists()) {
+                    outputDir.mkdirs();
                 }
-            }
 
-            // 3. Copy audio
-            for (int i = 0; i < allQuestions.size(); i++) {
-                Question q = allQuestions.get(i);
-                if (q.getAudio_url() != null && !q.getAudio_url().isBlank()) {
-                    File src = new File(q.getAudio_url());
-                    if (!src.exists()) {
-                        JOptionPane.showMessageDialog(this, "❌ Không tìm thấy file âm thanh: " + src.getAbsolutePath());
-                        return;
-                    }
-                    String extension = src.getName().substring(src.getName().lastIndexOf("."));
-                    File dest = new File(outputDir, "audio_" + (i + 1) + extension);
-                    Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
+                // Ghi file PDF
+                PDFUtils.exportToPdf(outputDir.getAbsolutePath(), allQuestions,i);
 
+            }
 
             JOptionPane.showMessageDialog(this, "✅ Đề thi đã được tạo thành công!");
             dispose();
