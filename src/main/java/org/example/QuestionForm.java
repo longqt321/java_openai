@@ -198,7 +198,6 @@ public class QuestionForm extends JDialog {
                 protected List<Question> doInBackground() throws Exception {
                     timer.start();
                     String raw = AIUtils.extractQuestions(selected.getAbsolutePath());
-                    System.out.println(raw);
                     return parseQuestions(raw);
                 }
 

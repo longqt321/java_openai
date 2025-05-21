@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 
 public class AIUtils {
     public static String extractQuestions(String imgPath) throws IOException {
-        String exePath = "D:\\study\\DUT\\java\\deadinside\\src\\dist\\model.exe";
+        String exePath = System.getenv("OPENAI_SCRIPT_PATH");
         ProcessBuilder builder = new ProcessBuilder(exePath, imgPath);
         builder.redirectErrorStream(true);
         Process process = builder.start();
