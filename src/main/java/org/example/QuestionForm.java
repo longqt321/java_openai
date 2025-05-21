@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
@@ -227,7 +228,13 @@ public class QuestionForm extends JDialog {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Chọn file âm thanh");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        chooser.setAcceptAllFileFilterUsed(true);
+
+        // Chỉ cho phép chọn file có đuôi .mp3, .wav, .ogg, v.v.
+        FileNameExtensionFilter audioFilter = new FileNameExtensionFilter(
+                "File âm thanh (.mp3, .wav, .ogg)", "mp3", "wav", "ogg", "flac", "aac", "m4a"
+        );
+        chooser.setFileFilter(audioFilter);
+        chooser.setAcceptAllFileFilterUsed(false); // Ẩn tuỳ chọn "All files"
 
         int result = chooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {

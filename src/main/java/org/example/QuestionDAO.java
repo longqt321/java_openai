@@ -3,6 +3,7 @@ package org.example;
 import org.example.DBUtils;
 import org.example.Question;
 
+import java.io.File;
 import java.sql.*;
 import java.util.*;
 
@@ -61,4 +62,43 @@ public class QuestionDAO {
             stmt.executeUpdate();
         }
     }
+
+    public List<Question> generateTest(Map<String, Integer> criteria) throws SQLException {
+        List<Question> result = new ArrayList<>();
+
+        String sql = "SELECT * FROM questions WHERE type=? AND level=? ORDER BY RAND() LIMIT ?";
+
+        try (Connection conn = DBUtils.getConnection()) {
+            for (Map.Entry<String, Integer> entry : criteria.entrySet()) {
+                String[] parts = entry.getKey().split(":");
+                String type = parts[0];
+                String level = parts[1];
+                int limit = entry.getValue();
+
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, type);
+                    stmt.setString(2, level);
+                    stmt.setInt(3, limit);
+
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        while (rs.next()) {
+                            Question q = new Question();
+                            q.setId(rs.getInt("id"));
+                            q.setContent(rs.getString("content"));
+                            q.setType(rs.getString("type"));
+                            q.setAudio_url(rs.getString("audio_url"));
+                            q.setLevel(rs.getString("level"));
+                            q.setSuggested_answer(rs.getString("suggested_answer"));
+
+
+                            result.add(q);
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
 }

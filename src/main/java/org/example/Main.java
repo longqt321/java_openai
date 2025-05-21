@@ -2,6 +2,7 @@ package org.example;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -65,6 +66,7 @@ public class Main extends JFrame {
         JButton btnAdd = new JButton("Thêm");
         JButton btnEdit = new JButton("Sửa");
         JButton btnDelete = new JButton("Xoá");
+        JButton btnGenTest = new JButton("Tạo đề thi");
 
         btnRefresh.addActionListener(e -> refreshData());
         btnAdd.addActionListener(e -> showForm(null));
@@ -89,9 +91,15 @@ public class Main extends JFrame {
                 }
             }
         });
+        btnGenTest.addActionListener(e -> {
+            GenTestDialog dialog = new GenTestDialog(this, dao);
+            dialog.setVisible(true);
+        });
 
         JPanel panelButtons = new JPanel();
+
         panelButtons.add(btnRefresh);
+        panelButtons.add(btnGenTest);
         panelButtons.add(btnAdd);
         panelButtons.add(btnEdit);
         panelButtons.add(btnDelete);
@@ -105,8 +113,7 @@ public class Main extends JFrame {
             List<Question> list = dao.getAll();
             tableModel.setData(list);
         } catch (Exception e) {
-            e.printStackTrace();
-        }
+            e.printStackTrace();        }
     }
 
     private void showForm(Question q) {
