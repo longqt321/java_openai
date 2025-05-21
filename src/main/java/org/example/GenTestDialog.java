@@ -45,6 +45,41 @@ public class GenTestDialog extends JDialog {
         topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         topPanel.add(btnAdd);
 
+        String[] levels = {"N5", "N4", "N3", "N2", "N1"};
+        String[] types = {"漢字", "文法", "語彙"};
+
+        JPanel tablePanel = new JPanel(new GridLayout(4, 6, 5, 5)); // 4 dòng, 6 cột
+        tablePanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(0, 10, 0, 0),
+                BorderFactory.createTitledBorder("Số câu hỏi sẵn có")
+        ));
+
+// Dòng tiêu đề
+        tablePanel.add(new JLabel("")); // Ô trống đầu dòng
+        for (String level : levels) {
+            JLabel label = new JLabel(level, SwingConstants.CENTER);
+            label.setFont(new Font("Dialog", Font.BOLD, 14));
+            tablePanel.add(label);
+        }
+
+// Dữ liệu từng dòng
+        for (String type : types) {
+            JLabel typeLabel = new JLabel(type, SwingConstants.CENTER);
+            typeLabel.setFont(new Font("Dialog", Font.PLAIN, 14));
+            tablePanel.add(typeLabel);
+
+            for (String level : levels) {
+                int count = dao.countQuestions(JulyUtils.TYPE_JP_TO_EN.get(type), level);
+                JLabel countLabel = new JLabel(String.valueOf(count), SwingConstants.CENTER);
+                countLabel.setFont(new Font("Dialog", Font.PLAIN, 14));
+                tablePanel.add(countLabel);
+            }
+        }
+
+// Kích thước gọn
+        tablePanel.setPreferredSize(new Dimension(420, 100));
+        topPanel.add(tablePanel);
+
         // Configure main panels
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
 

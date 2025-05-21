@@ -62,6 +62,20 @@ public class QuestionDAO {
             stmt.executeUpdate();
         }
     }
+    public int countQuestions(String type, String level) {
+        String sql = "SELECT COUNT(*) FROM questions WHERE type=? AND level=?";
+        try (Connection conn = DBUtils.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, type);
+            stmt.setString(2, level);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
 
     public List<Question> generateTest(Map<String, Integer> criteria) throws SQLException {
         List<Question> result = new ArrayList<>();
